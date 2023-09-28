@@ -62,55 +62,76 @@ def lematizarPrueba(prueba):
     filtered_tokens = [token for token in lemmatized_tokens if token.lower() not in stopwords]
 
     # Imprimir la lista de tokens lematizados sin stopwords
-    print(filtered_tokens)
-    
-    return filtered_tokens
+    #print(filtered_tokens)
+    texto = " ".join(filtered_tokens)
+    print(texto)
+    return texto
 
-
-#lematizarCorpusOriginal(corpus_original)
-
+#leer el archivo de noticias y guardar en un arreglo
 noticias = []
 #leer archivo y guardar en arreglo donde cada salto de linea es un elemento
-with open('corpus_normalizado.txt', 'r', encoding='utf-8') as archivo:
+#El bueno es corppus_normalizado.txt, corpus_final.txt para probar
+with open('corpus_final.txt', 'r', encoding='utf-8') as archivo:
     lineas = archivo.readlines()
     for linea in lineas:
         noticias.append(linea.strip('\n'))
 
-#print (noticias)
-#Para el de prueba solo vectorizador_binario.transform
+#vectorizar el arreglo de noticias
 vectorizador_binario = CountVectorizer(binary=True)
 xBinario = vectorizador_binario.fit_transform(noticias)
-print ('Representación vectorial binarizada')
-print (xBinario.toarray())
 
 vectorizador_frecuencia = CountVectorizer(token_pattern= r'(?u)\w\w+|\w\w+\n|\.')
 xFrecuencia = vectorizador_frecuencia.fit_transform(noticias)
-print('Representación vectorial por frecuencia')
-print (xFrecuencia.toarray())
 
 vectorizador_tfidf = TfidfVectorizer(token_pattern= r'(?u)\w\w+|\w\w+\n|\.')
 xtfidf = vectorizador_tfidf.fit_transform(noticias)
-print ('Representación vectorial tf-idf')
-print (xtfidf.toarray())
 
-
-
-with open('./pruebas noticia/prueba 4 (IPN).txt', 'r', encoding='utf-8') as archivo:
+#leer el archivo de prueba y guardar en un arreglo
+with open('./pruebas noticia/pruebajeje.txt', 'r', encoding='utf-8') as archivo:
     pruebatxt = archivo.read()
 
-pruebaNoticia = lematizarPrueba(pruebatxt)
+pruebaNoticia = [lematizarPrueba(pruebatxt)]
 
 yBinario = vectorizador_binario.transform(pruebaNoticia)
-print ('Representación vectorial binarizada')
-print (yBinario.toarray())
 
 yFrecuencia = vectorizador_frecuencia.transform(pruebaNoticia)
-print('Representación vectorial por frecuencia')
-print (yFrecuencia.toarray())
 
 ytfidf = vectorizador_tfidf.transform(pruebaNoticia)
-print ('Representación vectorial tf-idf')
-print (ytfidf.toarray())
+
+xArreglo = xFrecuencia.toarray()
+yArreglo = yFrecuencia.toarray()
+
+#recorrer el arreglo de noticias y comparar con la noticia de prueba
+#guardar los resultados en un arreglo
+similitud = []
+for i in range(len(xArreglo)):
+    similitud.append(cosine(xArreglo[i],yArreglo[0]))
+
+#mostrar el top 10 de noticias mas similares
+print("Top 10 noticias mas similares")
+for i in range(10):
+    index = similitud.index(max(similitud))
+    print(i+1, "Noticia: ", index, "Similitud: ", similitud[index])
+    similitud[index] = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#similitud = cosine(xArreglo[0],yArreglo[0])#,yArreglo[0]
+#print(similitud)
+
 
 # cosine(xBinario.toarray(), yBinario.toarray())
 # cosine(xFrecuencia[0], yFrecuencia.toarray())
@@ -121,14 +142,14 @@ print (ytfidf.toarray())
 # similarities = cosine_similarity(xFrecuencia, yFrecuencia)
 # most_similar_indices = similarities.argsort(axis=1)[:, ::-1]
 
-similarities = cosine_similarity(xtfidf, ytfidf)
-most_similar_indices = similarities.argsort(axis=1)[:, ::-1]
+#similarities = cosine_similarity(xtfidf, ytfidf)
+#most_similar_indices = similarities.argsort(axis=1)[:, ::-1]
 
 # Mostrar el "top n" de resultados, por ejemplo, los 5 vectores más similares
-top_n = 10
-for i in range(top_n):
-    index = most_similar_indices[0][i]  # Obtener el índice del i-ésimo vector más similar
-    similarity_score = similarities[0][index]  # Obtener la puntuación de similitud coseno correspondiente
-    print(f"Documento más similar {i + 1}: Índice {index}, Similitud Coseno: {similarity_score}")
+#top_n = 10
+#for i in range(top_n):
+#    index = most_similar_indices[0][i]  # Obtener el índice del i-ésimo vector más similar
+#    similarity_score = similarities[0][index]  # Obtener la puntuación de similitud coseno correspondiente
+#    print(f"Documento más similar {i + 1}: Índice {index}, Similitud Coseno: {similarity_score}")
 # La variable 'similarity' ahora contiene la similitud coseno entre todos los pares de vectores en xFrecuencia y yFrecuencia.
 # Si quieres obtener la similitud entre el primer vector de xFrecuencia y el primer vector de yFrecuencia, puedes acceder a ella de la siguiente manera:
