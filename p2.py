@@ -2,7 +2,9 @@
 #-Tokenize the extracted content and create a tokenized corpus
 #-Lemmatize the corpus
 #-Remove stop words that are articles,prepositions,conjunctions and pronouns
-
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
 import re
 import spacy
 from nltk.corpus import stopwords
@@ -64,8 +66,13 @@ def lematizarPrueba(prueba):
     # Imprimir la lista de tokens lematizados sin stopwords
     #print(filtered_tokens)
     texto = " ".join(filtered_tokens)
-    print(texto)
     return texto
+
+"""
+************************************************************************************
+************************************************************************************
+************************************************************************************
+"""
 
 #leer el archivo de noticias y guardar en un arreglo
 noticias = []
@@ -79,77 +86,87 @@ with open('corpus_final.txt', 'r', encoding='utf-8') as archivo:
 #vectorizar el arreglo de noticias
 vectorizador_binario = CountVectorizer(binary=True)
 xBinario = vectorizador_binario.fit_transform(noticias)
+xArregloBinario = xBinario.toarray()
 
 vectorizador_frecuencia = CountVectorizer(token_pattern= r'(?u)\w\w+|\w\w+\n|\.')
 xFrecuencia = vectorizador_frecuencia.fit_transform(noticias)
+xArregloFrecuencia = xFrecuencia.toarray()
 
 vectorizador_tfidf = TfidfVectorizer(token_pattern= r'(?u)\w\w+|\w\w+\n|\.')
 xtfidf = vectorizador_tfidf.fit_transform(noticias)
+xArregloTfidf = xtfidf.toarray()
 
-#leer el archivo de prueba y guardar en un arreglo
-with open('./pruebas noticia/pruebajeje.txt', 'r', encoding='utf-8') as archivo:
-    pruebatxt = archivo.read()
+pruebaNoticia = []
 
-pruebaNoticia = [lematizarPrueba(pruebatxt)]
+# Interfaz gráfica
+def cargar_noticias():
+    global pruebaNoticia
+    archivo_path = filedialog.askopenfilename(filetypes=[('Archivos de texto', '*.txt')])
+    if archivo_path:
+        with open(archivo_path, 'r', encoding='utf-8') as archivo:
+            pruebatxt = archivo.read()
+        messagebox.showinfo('Información', 'Archivo de noticias cargado exitosamente.')
+        pruebaNoticia = [lematizarPrueba(pruebatxt)]
+        
 
-yBinario = vectorizador_binario.transform(pruebaNoticia)
+def mostrar_top_10(tipo_vectorizacion):
+    global  xArregloBinario, xArregloFrecuencia, xArregloTfidf, pruebaNoticia, vectorizador_binario, vectorizador_frecuencia, vectorizador_tfidf
+    
+    if tipo_vectorizacion == "Binaria":
+        yArreglo = vectorizador_binario.transform(pruebaNoticia).toarray()
+        xArreglo = xArregloBinario
+    elif tipo_vectorizacion == "Frecuencia":
+        yArreglo = vectorizador_frecuencia.transform(pruebaNoticia).toarray()
+        xArreglo = xArregloFrecuencia
+    else:
+        yArreglo = vectorizador_tfidf.transform(pruebaNoticia).toarray()
+        xArreglo = xArregloTfidf
 
-yFrecuencia = vectorizador_frecuencia.transform(pruebaNoticia)
+    similitud = []
+    for i in range(len(xArreglo)):
+        similitud.append(cosine_similarity([xArreglo[i]], yArreglo)[0][0])
 
-ytfidf = vectorizador_tfidf.transform(pruebaNoticia)
+    top_10_noticias = []
+    for i in range(10):
+        index = similitud.index(max(similitud))
+        top_10_noticias.append((i + 1, index, similitud[index]))
+        similitud[index] = 0
 
-xArreglo = xFrecuencia.toarray()
-yArreglo = yFrecuencia.toarray()
+    top_10_text = "\n".join([f"{i}. Noticia: {index}, Similitud: {similitud:.4f}" for i, index, similitud in top_10_noticias])
+    resultado.config(state="normal")
+    resultado.delete("1.0", "end")
+    resultado.insert("1.0", "Top 10 noticias más similares:\n" + top_10_text)
+    resultado.config(state="disabled")
 
-#recorrer el arreglo de noticias y comparar con la noticia de prueba
-#guardar los resultados en un arreglo
-similitud = []
-for i in range(len(xArreglo)):
-    similitud.append(cosine(xArreglo[i],yArreglo[0]))
+ventana = tk.Tk()
+ventana.title("Buscador de Noticias")
 
-#mostrar el top 10 de noticias mas similares
-print("Top 10 noticias mas similares")
-for i in range(10):
-    index = similitud.index(max(similitud))
-    print(i+1, "Noticia: ", index, "Similitud: ", similitud[index])
-    similitud[index] = 0
+cargar_btn = tk.Button(ventana, text="Cargar Noticia", command=cargar_noticias)
+cargar_btn.pack()
 
+vectorizacion_label = tk.Label(ventana, text="Seleccione el tipo de vectorización:")
+vectorizacion_label.pack()
 
+vectorizacion_var = tk.StringVar(ventana)
+vectorizacion_var.set("Frecuencia")
 
+vectorizacion_opciones = tk.OptionMenu(ventana, vectorizacion_var, "Binaria", "Frecuencia", "TF-IDF")
+vectorizacion_opciones.pack()
 
+buscar_btn = tk.Button(ventana, text="Buscar Noticias Similares", command=lambda: mostrar_top_10(vectorizacion_var.get()))
+buscar_btn.pack()
 
+resultado = tk.Text(ventana, height=10, width=60, state="disabled")
+resultado.pack()
 
-
-
-
-
-
-
-
-
-
-
-#similitud = cosine(xArreglo[0],yArreglo[0])#,yArreglo[0]
-#print(similitud)
+ventana.mainloop()
 
 
-# cosine(xBinario.toarray(), yBinario.toarray())
-# cosine(xFrecuencia[0], yFrecuencia.toarray())
-# cosine(xtfidf[0], ytfidf.toarray())
 
-# print (vectorizador_binario.get_feature_names_out())
 
-# similarities = cosine_similarity(xFrecuencia, yFrecuencia)
-# most_similar_indices = similarities.argsort(axis=1)[:, ::-1]
 
-#similarities = cosine_similarity(xtfidf, ytfidf)
-#most_similar_indices = similarities.argsort(axis=1)[:, ::-1]
 
-# Mostrar el "top n" de resultados, por ejemplo, los 5 vectores más similares
-#top_n = 10
-#for i in range(top_n):
-#    index = most_similar_indices[0][i]  # Obtener el índice del i-ésimo vector más similar
-#    similarity_score = similarities[0][index]  # Obtener la puntuación de similitud coseno correspondiente
-#    print(f"Documento más similar {i + 1}: Índice {index}, Similitud Coseno: {similarity_score}")
-# La variable 'similarity' ahora contiene la similitud coseno entre todos los pares de vectores en xFrecuencia y yFrecuencia.
-# Si quieres obtener la similitud entre el primer vector de xFrecuencia y el primer vector de yFrecuencia, puedes acceder a ella de la siguiente manera:
+
+
+
+
