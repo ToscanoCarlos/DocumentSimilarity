@@ -24,7 +24,7 @@ def cosine(x, y):
 	return (res)
 
 
-def lematizarPrueba(prueba):
+def normalizarPrueba(prueba):
         
     # Cargar el modelo de spaCy en español
     nlp = spacy.load("es_core_news_sm")
@@ -48,7 +48,7 @@ def lematizarPrueba(prueba):
 
     # Procesar el texto con SpaCy para lematizar
     doc = nlp(prueba_text)
-
+    """
     # Obtener lemas de los tokens
     lemmas = [token.lemma_ for token in doc]
 
@@ -66,19 +66,32 @@ def lematizarPrueba(prueba):
     # Imprimir la lista de tokens lematizados sin stopwords
     #print(filtered_tokens)
     texto = " ".join(filtered_tokens)
-    return texto
+    """
 
-"""
-************************************************************************************
-************************************************************************************
-************************************************************************************
-"""
+        
+    stop_words = [
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "al", "del", "lo", "este", "ese", "aquel", "estos", "esos", "aquellos", "este", "esta", "estas", "eso", "esa", "esas", "aquello", "alguno", "alguna", "algunos", "algunas",
+    "a", "ante", "bajo", "cabe", "con", "contra", "de", "desde", "en", "entre", "hacia", "hasta", "para", "por", "según", "sin", "so", "sobre", "tras", "durante", "mediante", "excepto", "a través de", "conforme a", "encima de", "debajo de", "frente a", "dentro de",
+    "y", "o", "pero", "ni", "que", "si", "como", "porque", "aunque", "mientras", "siempre que", "ya que", "pues", "a pesar de que", "además", "sin embargo", "así que", "por lo tanto", "por lo que", "tan pronto como", "a medida que", "tanto como", "no solo... sino también", "o bien", "bien... bien",
+    "yo", "tú", "él", "ella", "nosotros", "vosotros", "ellos", "ellas", "usted", "nosotras", "me", "te", "le", "nos", "os", "les", "se", "mí", "ti", "sí", "conmigo", "contigo", "consigo", "mi", "tu", "su", "nuestro", "vuestro", "sus", "mío", "tuyo", "suyo", "nuestro", "vuestro", "suyo"]
+
+    tokens_lematizados = [token.lemma_ for token in doc if (
+                token.text.lower() not in stop_words
+                # token.text not in {"&", "|", ";", ".", "(", ")", "“", '"', ",", "*", "”", "!", ":", "-", "¿", "?", "[", "]", "‘", "’", "…", "«", "»",  "#", "/", "\\","¡", "—", "...", "_" , "$", "@"}
+            )]
+    noticia_normalizada = ' '.join(tokens_lematizados)
+    #guardar en un txt
+    with open('prueba_normalizada.txt', 'w', encoding='utf-8') as archivo:
+        archivo.write(noticia_normalizada)
+
+    return noticia_normalizada
+
 
 #leer el archivo de noticias y guardar en un arreglo
 noticias = []
 #leer archivo y guardar en arreglo donde cada salto de linea es un elemento
 #El bueno es corppus_normalizado.txt, corpus_final.txt para probar
-with open('corpus_final.txt', 'r', encoding='utf-8') as archivo:
+with open('corpus_normalizado.txt', 'r', encoding='utf-8') as archivo:
     lineas = archivo.readlines()
     for linea in lineas:
         noticias.append(linea.strip('\n'))
@@ -106,7 +119,7 @@ def cargar_noticias():
         with open(archivo_path, 'r', encoding='utf-8') as archivo:
             pruebatxt = archivo.read()
         messagebox.showinfo('Información', 'Archivo de noticias cargado exitosamente.')
-        pruebaNoticia = [lematizarPrueba(pruebatxt)]
+        pruebaNoticia = [normalizarPrueba(pruebatxt)]
         
 
 def mostrar_top_10(tipo_vectorizacion):
@@ -132,7 +145,7 @@ def mostrar_top_10(tipo_vectorizacion):
         top_10_noticias.append((i + 1, index, similitud[index]))
         similitud[index] = 0
 
-    top_10_text = "\n".join([f"{i}. Noticia: {index}, Similitud: {similitud:.4f}" for i, index, similitud in top_10_noticias])
+    top_10_text = "\n".join([f"{i}. Noticia: {index+1}, Similitud: {similitud:.4f}" for i, index, similitud in top_10_noticias])
     resultado.config(state="normal")
     resultado.delete("1.0", "end")
     resultado.insert("1.0", "Top 10 noticias más similares:\n" + top_10_text)
